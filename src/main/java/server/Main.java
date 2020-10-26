@@ -1,72 +1,40 @@
 package server;
 
-import com.beust.jcommander.JCommander;
-import server.exceptions.InvalidCommandException;
-import server.exceptions.InvalidIndexException;
-import server.exceptions.ReadEmptyCellException;
+import client.ClientInput;
+import com.google.gson.Gson;
+import server.exception.EmptyCellException;
+import server.exception.InvalidCommandException;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
 
     private static final int PORT = 23456;
     private static boolean exit = false;
     private static final int dbSize = 1000;
-    private static final String[] db = new String[dbSize];
+    private static final Map<String,String> db = new HashMap<>();
 
     public static void main(String[] args) {
         try (ServerSocket server = new ServerSocket(PORT)) {
 
             System.out.println("Server started!");
-            initializeDB();
 
             // Listens for client sockets
             while (!exit) {
-
-                List<String> inputs = new ArrayList<>();
-
                 try (Socket socket = server.accept();
-                     DataInputStream input = new DataInputStream(socket.getInputStream());
-                     DataOutputStream output = new DataOutputStream(socket.getOutputStream()))
+                     DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+                     DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream()))
                 {
-                    try {
-                        int inputLengh = input.readInt();
-                        for (int i = 0; i < inputLengh; i++)
-                            inputs.add(input.readUTF());
-
-                        ClientArgs clientArgs = new ClientArgs();
-                        JCommander.newBuilder()
-                                .addObject(clientArgs)
-                                .build()
-                                .parse(inputs.toArray(new String[0]));
-
-                        if (!ClientArgsValidator.validateCommand(clientArgs.getTask()))
-                            throw new InvalidCommandException("Error");
-
-                        if (!ClientArgsValidator.validateIdx(clientArgs.getIndex()))
-                            throw new InvalidIndexException("Error");
-
-                        output.writeUTF(handleRequest(clientArgs.getTask(), clientArgs.getIndex(), clientArgs.getEntry()));
-                    }
-                    catch (ReadEmptyCellException e) {
-                        System.out.println("Error: trying to read empty cell!");
-                        output.writeUTF("ERROR");
-                    }
-                    catch (InvalidCommandException e) {
-                        System.out.println("Error: invalid command!");
-                        output.writeUTF("ERROR");
-                    }
-                    catch (InvalidIndexException e) {
-                        System.out.println("Error: invalid index!");
-                        output.writeUTF("ERROR");
-                    }
+                    String clientInputStr = inputStream.readUTF();
+                    ClientInput clientInput = new Gson().fromJson(clientInputStr, ClientInput.class);
+                    ServerResponse serverResponse = handleRequest(clientInput);
+                    outputStream.writeUTF(new Gson().toJson(serverResponse));
                 }
             }
         }
@@ -75,38 +43,58 @@ public class Main {
         }
     }
 
-    private static void initializeDB() {
-        for (int i=0; i<db.length; i++)
-            db[i] = "";
-    }
-
     public static int getDbSize() {
         return dbSize;
     }
 
-    private static String handleRequest(String command, int idx, String newEntry) {
+    private static ServerResponse handleRequest(ClientInput clientInput) {
 
-        String response = "";
+        ServerResponse serverResponse = new ServerResponse();
+        ClientInputValidator inputValidator = new ClientInputValidator();
 
-        if(command.equals("exit")) {
-            exit = true;
-            response = "OK";
-        }
-        else if (command.equals("set")) {
-            db[idx] = newEntry;
-            response = "OK";
-        }
-        else if(command.equals("delete")) {
-            db[idx] = "";
-            response = "OK";
-        }
-        else if(command.equals("get")) {
-            if(db[idx].equals(""))
-                throw new ReadEmptyCellException("Error");
-            else
-                response = db[idx];
-        }
+        try {
+            if (!inputValidator.validateCommand(clientInput))
+                throw new InvalidCommandException("Error: invalid command!");
 
-        return response;
+            String command = clientInput.getType();
+
+            if (command.equals("exit")) {
+                exit = true;
+                serverResponse.setResponse("OK");
+                return serverResponse;
+            }
+
+            String key = clientInput.getKey();
+
+            if (command.equals("set")) {
+                db.put(key,clientInput.getValue());
+                serverResponse.setResponse("OK");
+            }
+            else if (command.equals("delete")) {
+                if (db.get(key) == null)
+                    throw new EmptyCellException("Error: trying to delete empty cell!");
+
+                db.remove(key);
+                serverResponse.setResponse("OK");
+            }
+            else if (command.equals("get")) {
+                if (db.get(key) == null)
+                    throw new EmptyCellException("Error: trying to read empty cell!");
+
+                serverResponse.setResponse("OK");
+                serverResponse.setValue(db.get(key));
+            }
+        }
+        catch (EmptyCellException e) {
+            serverResponse.setResponse("ERROR");
+            serverResponse.setReason("No such key");
+        }
+        catch (InvalidCommandException e) {
+            serverResponse.setResponse("ERROR");
+            serverResponse.setReason(e.getMessage());
+        }
+        finally {
+            return serverResponse;
+        }
     }
 }
