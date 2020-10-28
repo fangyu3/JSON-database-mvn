@@ -2,10 +2,9 @@ package client;
 
 import com.beust.jcommander.JCommander;
 import com.google.gson.Gson;
+import utility.FileIOUtil;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -16,6 +15,7 @@ public class Main {
 
     private static final int PORT = 23456;
     private static final String SERVER_ADDRESS = "127.0.0.1";
+    private static final String clientInputFilePath = "./src/main/java/client/data/";
 
     public static void main(String[] args) {
 
@@ -32,15 +32,19 @@ public class Main {
                         .build()
                         .parse(args);
 
-                String output = new Gson().toJson(input);
+                String output = input.getFileName() == null
+                                ? new Gson().toJson(input)
+                                : readFile(input.getFileName());
+
                 outputStream.writeUTF(output);
                 System.out.println("Sent: " + output);
 
                 String response = inputStream.readUTF();
-                System.out.println("Received: " +response);
+                System.out.println("Received: " + response);
+
             }
         }
-        catch (UnknownHostException e) {
+        catch (UnknownHostException | FileNotFoundException e) {
             System.out.println(e.getMessage());
         }
         catch (IOException e) {
@@ -48,4 +52,19 @@ public class Main {
         }
     }
 
+    public static String readFile(String fileName) throws FileNotFoundException,IOException {
+
+        File inputFile = new File(clientInputFilePath+fileName);
+        if (!inputFile.exists()) {
+            inputFile.getParentFile().mkdirs();
+            inputFile.createNewFile();
+        }
+
+        try(Scanner scanner = new Scanner(inputFile)) {
+            if (scanner.hasNext())
+                return scanner.nextLine();
+        }
+
+        return "";
+    }
 }

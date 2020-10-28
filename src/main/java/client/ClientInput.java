@@ -5,8 +5,7 @@ import com.beust.jcommander.Parameter;
 public class ClientInput {
     @Parameter(
             names = "-t",
-            description = "The type of task requested by the client",
-            required = true
+            description = "The type of task requested by the client"
     )
     private String type;
 
@@ -22,6 +21,14 @@ public class ClientInput {
     )
     private String value;
 
+    @Parameter(
+            names = "-in",
+            description = "input file"
+    )
+    private String fileName;
+
+
+
     public String getType() {
         return type;
     }
@@ -33,4 +40,6 @@ public class ClientInput {
     public String getValue() {
         return value;
     }
+
+    public String getFileName() { return fileName; }
 }
