@@ -1,7 +1,10 @@
 package utility;
 
+import com.google.gson.JsonObject;
+
 import java.io.*;
 import java.util.HashMap;
+import java.util.Properties;
 
 public class FileIOUtil {
 
@@ -11,7 +14,7 @@ public class FileIOUtil {
         fileName = fullPathFileName;
     }
 
-    public void serialize(HashMap<String,String> obj) {
+    public void serialize(HashMap<String, String> obj) {
         try (
             FileOutputStream fos = new FileOutputStream(fileName,false);
             BufferedOutputStream bos = new BufferedOutputStream(fos);

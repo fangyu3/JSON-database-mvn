@@ -2,13 +2,10 @@ package client;
 
 import com.beust.jcommander.JCommander;
 import com.google.gson.Gson;
-import utility.FileIOUtil;
 
 import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -26,7 +23,7 @@ public class Main {
             try (DataInputStream inputStream = new DataInputStream(socket.getInputStream());
                 DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());)
             {
-                ClientInput input = new ClientInput();
+                ClientArgs input = new ClientArgs();
                 JCommander.newBuilder()
                         .addObject(input)
                         .build()

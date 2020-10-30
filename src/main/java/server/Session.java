@@ -1,7 +1,8 @@
 package server;
 
-import client.ClientInput;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import server.exception.EmptyCellException;
 import server.exception.InvalidCommandException;
 
@@ -46,7 +47,7 @@ public class Session extends Thread{
                 throw new InvalidCommandException("Error: invalid command!");
 
             String command = clientInput.getType();
-            String key = clientInput.getKey();
+            JsonElement key = clientInput.getKey();
 
             switch(command) {
                 case "exit":

@@ -1,8 +1,11 @@
 package server;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 public class ServerResponse {
     private String response;
-    private String value;
+    private JsonElement value;
     private String reason;
 
     public ServerResponse() {
@@ -16,7 +19,7 @@ public class ServerResponse {
         this.response = status;
     }
 
-    public void setValue(String value) {
+    public void setValue(JsonElement value) {
         this.value = value;
     }
 

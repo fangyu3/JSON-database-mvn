@@ -1,8 +1,10 @@
 package client;
 
 import com.beust.jcommander.Parameter;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
-public class ClientInput {
+public class ClientArgs {
     @Parameter(
             names = "-t",
             description = "The type of task requested by the client"
